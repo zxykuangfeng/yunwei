@@ -4,6 +4,10 @@
       <div class="charts">
         <div ref="connectionChart" class="chart"></div>
         <div ref="tablespaceChart" class="chart"></div>
+        <div ref="cpuLoadChart" class="chart"></div>
+        <div ref="cpuUsageChart" class="chart"></div>
+        <div ref="trafficChart" class="chart"></div>
+        <div ref="processChart" class="chart"></div>
       </div>
       <el-table :data="dbList" stripe class="dark-table" style="width: 100%">
         <el-table-column prop="name" label="数据库" width="120" />
@@ -67,16 +71,35 @@
             datafiles: '5',
             filesystem: '稳定'
           }
-        ]
+          ],
+        connectionChart: null,
+        tablespaceChart: null,
+        cpuLoadChart: null,
+        cpuUsageChart: null,
+        trafficChart: null,
+        processChart: null,
+        timer: null
       }
     },
     mounted() {
       this.initCharts()
+      this.timer = setInterval(this.updateCharts, 2000)
+    },
+    beforeDestroy() {
+      if (this.timer) {
+        clearInterval(this.timer)
+      }
     },
     methods: {
       initCharts() {
-        const connectionChart = echarts.init(this.$refs.connectionChart, 'dark')
-        connectionChart.setOption({
+        this.connectionChart = echarts.init(this.$refs.connectionChart, 'dark')
+        this.tablespaceChart = echarts.init(this.$refs.tablespaceChart, 'dark')
+        this.cpuLoadChart = echarts.init(this.$refs.cpuLoadChart, 'dark')
+        this.cpuUsageChart = echarts.init(this.$refs.cpuUsageChart, 'dark')
+        this.trafficChart = echarts.init(this.$refs.trafficChart, 'dark')
+        this.processChart = echarts.init(this.$refs.processChart, 'dark')
+
+        this.connectionChart.setOption({
           title: { text: '连接数', textStyle: { color: '#fff' } },
           tooltip: {},
           xAxis: {
@@ -95,8 +118,7 @@
           }]
         })
   
-        const tablespaceChart = echarts.init(this.$refs.tablespaceChart, 'dark')
-        tablespaceChart.setOption({
+        this.tablespaceChart.setOption({
           title: { text: '表空间使用率', textStyle: { color: '#fff' } },
           tooltip: { trigger: 'item' },
           legend: { textStyle: { color: '#ccc' } },
@@ -109,6 +131,91 @@
             }))
           }]
         })
+
+        this.cpuLoadChart.setOption({
+          title: { text: 'CPU负载', textStyle: { color: '#fff' } },
+          series: [{
+            type: 'gauge',
+            progress: { show: true },
+            detail: { formatter: '{value}%' },
+            data: [{ value: Math.round(Math.random() * 100) }]
+          }]
+        })
+
+        this.cpuUsageChart.setOption({
+          title: { text: 'CPU使用率', textStyle: { color: '#fff' } },
+          series: [{
+            type: 'gauge',
+            progress: { show: true },
+            detail: { formatter: '{value}%' },
+            data: [{ value: Math.round(Math.random() * 100) }]
+          }]
+        })
+
+        const baseData = Array.from({ length: 6 }, (_, i) => i + 1)
+        this.trafficChart.setOption({
+          title: { text: '网络流量', textStyle: { color: '#fff' } },
+          tooltip: {},
+          legend: { data: ['流入', '流出'], textStyle: { color: '#ccc' } },
+          xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: baseData,
+            axisLabel: { color: '#ccc' }
+          },
+          yAxis: { type: 'value', axisLabel: { color: '#ccc' } },
+          series: [
+            { name: '流入', type: 'line', data: baseData.map(() => Math.round(Math.random() * 100)) },
+            { name: '流出', type: 'line', data: baseData.map(() => Math.round(Math.random() * 100)) }
+          ]
+        })
+
+        this.processChart.setOption({
+          title: { text: '进程数', textStyle: { color: '#fff' } },
+          series: [{
+            type: 'gauge',
+            progress: { show: true },
+            detail: { formatter: '{value}' },
+            data: [{ value: Math.round(Math.random() * 100) }]
+          }]
+        })
+      },
+      updateCharts() {
+        if (this.connectionChart) {
+          this.connectionChart.setOption({
+            series: [{ data: this.dbList.map(() => Math.round(Math.random() * 100)) }]
+          })
+        }
+        if (this.tablespaceChart) {
+          this.tablespaceChart.setOption({
+            series: [{ data: this.dbList.map(db => ({ name: db.name, value: Math.round(Math.random() * 100) })) }]
+          })
+        }
+        if (this.cpuLoadChart) {
+          this.cpuLoadChart.setOption({
+            series: [{ data: [{ value: Math.round(Math.random() * 100) }] }]
+          })
+        }
+        if (this.cpuUsageChart) {
+          this.cpuUsageChart.setOption({
+            series: [{ data: [{ value: Math.round(Math.random() * 100) }] }]
+          })
+        }
+        if (this.trafficChart) {
+          const baseData = Array.from({ length: 6 }, (_, i) => i + 1)
+          this.trafficChart.setOption({
+            xAxis: { data: baseData },
+            series: [
+              { data: baseData.map(() => Math.round(Math.random() * 100)) },
+              { data: baseData.map(() => Math.round(Math.random() * 100)) }
+            ]
+          })
+        }
+        if (this.processChart) {
+          this.processChart.setOption({
+            series: [{ data: [{ value: Math.round(Math.random() * 100) }] }]
+          })
+        }
       }
     }
   }
@@ -126,11 +233,13 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
+    flex-wrap: wrap;
   }
   
   .chart {
     width: 48%;
     height: 300px;
+    margin-bottom: 20px;
   }
   
   .dark-table >>> .el-table,
