@@ -245,8 +245,8 @@
   .dark-table >>> .el-table,
   .dark-table >>> .el-table__header-wrapper,
   .dark-table >>> .el-table__body-wrapper {
-    background-color: #2b2b2b;
-    color: #fff;
+    background-color: #2b2b2b!important ;
+    /* color: #fff; */
   }
   
   .title {
