@@ -1,6 +1,7 @@
 <template>
   <div class="app">
-  
+    <el-button type="primary" @click="gotoMonitoring">进入监控演示</el-button>
+
   </div>
 </template>
 
@@ -15,7 +16,9 @@ export default {
     }
   },
   methods: {
-    
+    gotoMonitoring() {
+      this.$router.push({ name: 'Monitoring' })
+    }
 },
 
 }
