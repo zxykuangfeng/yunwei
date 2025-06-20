@@ -1,6 +1,41 @@
 <template>
     <div class="monitoring-page">
       <h2 class="title">新讯运维平台监控演示</h2>
+   
+      <table class="custom-table">
+      <thead>
+        <tr>
+          <th>数据库</th>
+          <th>类型</th>
+          <th>连接状态</th>
+          <th>监听状态</th>
+          <th>实例状态</th>
+          <th>启停状态</th>
+          <th>表空间</th>
+          <th>归档日志</th>
+          <th>闪回空间</th>
+          <th>数据文件</th>
+          <th>文件系统</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(item, index) in dbList" :key="index">
+          <td>{{ item.name }}</td>
+          <td>{{ item.type }}</td>
+          <td>{{ item.connection }}</td>
+          <td>{{ item.listener }}</td>
+          <td>{{ item.instance }}</td>
+          <td>{{ item.startup }}</td>
+          <td>{{ item.tablespace }}</td>
+          <td>{{ item.archivelog }}</td>
+          <td>{{ item.flashback }}</td>
+          <td>{{ item.datafiles }}</td>
+          <td>{{ item.filesystem }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+
       <div class="charts">
         <div ref="connectionChart" class="chart"></div>
         <div ref="tablespaceChart" class="chart"></div>
@@ -9,19 +44,7 @@
         <div ref="trafficChart" class="chart"></div>
         <div ref="processChart" class="chart"></div>
       </div>
-      <el-table :data="dbList" stripe class="dark-table" style="width: 100%">
-        <el-table-column prop="name" label="数据库" width="120" />
-        <el-table-column prop="type" label="类型" width="100" />
-        <el-table-column prop="connection" label="连接状态" width="100" />
-        <el-table-column prop="listener" label="监听状态" width="100" />
-        <el-table-column prop="instance" label="实例状态" width="100" />
-        <el-table-column prop="startup" label="启停状态" width="100" />
-        <el-table-column prop="tablespace" label="表空间" />
-        <el-table-column prop="archivelog" label="归档日志" />
-        <el-table-column prop="flashback" label="闪回空间" />
-        <el-table-column prop="datafiles" label="数据文件" />
-        <el-table-column prop="filesystem" label="文件系统" />
-      </el-table>
+
     </div>
   </template>
   
@@ -78,7 +101,14 @@
         cpuUsageChart: null,
         trafficChart: null,
         processChart: null,
-        timer: null
+        timer: null,
+        connectionData: [30, 45, 60],
+tablespaceData: [60, 75, 52],
+cpuLoadValue: 40,
+cpuUsageValue: 55,
+processValue: 88,
+trafficIn: [30, 35, 33, 32, 38, 36],
+trafficOut: [50, 48, 52, 51, 49, 53]
       }
     },
     mounted() {
@@ -91,6 +121,13 @@
       }
     },
     methods: {
+        generateStableValue(prev, range = 5, min = 0, max = 100) {
+  const delta = Math.floor(Math.random() * (range * 2 + 1)) - range // -range ~ +range
+  let newValue = prev + delta
+  if (newValue > max) newValue = max
+  if (newValue < min) newValue = min
+  return newValue
+},
       initCharts() {
         this.connectionChart = echarts.init(this.$refs.connectionChart, 'dark')
         this.tablespaceChart = echarts.init(this.$refs.tablespaceChart, 'dark')
@@ -181,42 +218,65 @@
         })
       },
       updateCharts() {
-        if (this.connectionChart) {
-          this.connectionChart.setOption({
-            series: [{ data: this.dbList.map(() => Math.round(Math.random() * 100)) }]
-          })
-        }
-        if (this.tablespaceChart) {
-          this.tablespaceChart.setOption({
-            series: [{ data: this.dbList.map(db => ({ name: db.name, value: Math.round(Math.random() * 100) })) }]
-          })
-        }
-        if (this.cpuLoadChart) {
-          this.cpuLoadChart.setOption({
-            series: [{ data: [{ value: Math.round(Math.random() * 100) }] }]
-          })
-        }
-        if (this.cpuUsageChart) {
-          this.cpuUsageChart.setOption({
-            series: [{ data: [{ value: Math.round(Math.random() * 100) }] }]
-          })
-        }
-        if (this.trafficChart) {
-          const baseData = Array.from({ length: 6 }, (_, i) => i + 1)
-          this.trafficChart.setOption({
-            xAxis: { data: baseData },
-            series: [
-              { data: baseData.map(() => Math.round(Math.random() * 100)) },
-              { data: baseData.map(() => Math.round(Math.random() * 100)) }
-            ]
-          })
-        }
-        if (this.processChart) {
-          this.processChart.setOption({
-            series: [{ data: [{ value: Math.round(Math.random() * 100) }] }]
-          })
-        }
-      }
+  // 连接数图表
+  this.connectionData = this.connectionData.map(v => this.generateStableValue(v))
+  if (this.connectionChart) {
+    this.connectionChart.setOption({
+      series: [{ data: this.connectionData }]
+    })
+  }
+
+  // 表空间
+  this.tablespaceData = this.tablespaceData.map(v => this.generateStableValue(v))
+  if (this.tablespaceChart) {
+    this.tablespaceChart.setOption({
+      series: [{
+        data: this.dbList.map((db, i) => ({
+          name: db.name,
+          value: this.tablespaceData[i]
+        }))
+      }]
+    })
+  }
+
+  // CPU 负载
+  this.cpuLoadValue = this.generateStableValue(this.cpuLoadValue)
+  if (this.cpuLoadChart) {
+    this.cpuLoadChart.setOption({
+      series: [{ data: [{ value: this.cpuLoadValue }] }]
+    })
+  }
+
+  // CPU 使用率
+  this.cpuUsageValue = this.generateStableValue(this.cpuUsageValue)
+  if (this.cpuUsageChart) {
+    this.cpuUsageChart.setOption({
+      series: [{ data: [{ value: this.cpuUsageValue }] }]
+    })
+  }
+
+  // 网络流量
+  this.trafficIn.push(this.generateStableValue(this.trafficIn[this.trafficIn.length - 1]))
+  this.trafficIn.shift()
+  this.trafficOut.push(this.generateStableValue(this.trafficOut[this.trafficOut.length - 1]))
+  this.trafficOut.shift()
+  if (this.trafficChart) {
+    this.trafficChart.setOption({
+      series: [
+        { data: this.trafficIn },
+        { data: this.trafficOut }
+      ]
+    })
+  }
+
+  // 进程数
+  this.processValue = this.generateStableValue(this.processValue, 3, 50, 100)
+  if (this.processChart) {
+    this.processChart.setOption({
+      series: [{ data: [{ value: this.processValue }] }]
+    })
+  }
+}
     }
   }
   </script>
@@ -242,15 +302,43 @@
     margin-bottom: 20px;
   }
   
-  .dark-table >>> .el-table,
-  .dark-table >>> .el-table__header-wrapper,
-  .dark-table >>> .el-table__body-wrapper {
-    background-color: #2b2b2b!important ;
-    /* color: #fff; */
-  }
-  
   .title {
     margin-bottom: 20px;
     color: #fff;
   }
   </style>
+<style scoped>
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  background-color: #2b2b2b;
+  color: #fff;
+  font-size: 14px;
+  border: 1px solid #444;
+}
+
+.custom-table thead {
+  background-color: #3a3a3a;
+}
+
+.custom-table th,
+.custom-table td {
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #444;
+}
+
+.custom-table tbody tr:nth-child(odd) {
+  background-color: #2f2f2f;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #404040;
+}
+
+.title {
+  color: #fff;
+  margin-bottom: 20px;
+}
+</style>
